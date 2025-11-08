@@ -1,5 +1,11 @@
 import pygame
 
+
+
+screen_width = 800
+screen_hieght = 600
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
@@ -38,3 +44,15 @@ class Player(pygame.sprite.Sprite):
 
         self.rect.x += self.vx
         self.rect.y += self.vy
+
+        if self.rect.left < 0:
+            self.rect.left = 0
+        if self.rect.right > screen_width:
+            self.rect.right = screen_width
+        if self.rect.top < 0:
+            self.rect.top = 0
+        if self.rect.bottom > screen_hieght:
+            self.rect.bottom = screen_hieght
+
+
+
