@@ -4,6 +4,7 @@ import pygame
 
 screen_width = 800
 screen_hieght = 600
+# player_speed = 3
 
 
 class Player(pygame.sprite.Sprite):
@@ -19,6 +20,7 @@ class Player(pygame.sprite.Sprite):
 
         self.vx = 0
         self.vy = 0
+
         self.speed = 1
 
     def update(self):
@@ -56,3 +58,12 @@ class Player(pygame.sprite.Sprite):
 
 
 
+class Enemy(pygame.sprite.Sprite):
+    def __init__(self, x,y):
+        super().__init__()
+
+        self.image= pygame.Surface((40,40))
+        self.image.fill((255,0,0))
+
+        self.rect = self.image.get_rect()
+        self.rect.center =( x,y)
