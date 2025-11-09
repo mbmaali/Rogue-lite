@@ -1,5 +1,5 @@
 import pygame
-
+import random
 
 
 screen_width = 800
@@ -67,3 +67,28 @@ class Enemy(pygame.sprite.Sprite):
 
         self.rect = self.image.get_rect()
         self.rect.center =( x,y)
+
+        self.vx = random.choice([-1, 1])
+        self.vy = random.choice([-1, 1])
+
+    def update(self):
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+
+        #  horizontaly
+        if self.rect.left < 0:
+            self.rect.left = 0
+            self.vx = 1
+        if self.rect.right > screen_width:
+            self.rect.right = screen_width
+            self.vx = -1
+
+        # vertical
+        if self.rect.top < 0:
+            self.rect.top = 0
+            self.vy = 1
+        if self.rect.bottom > screen_hieght:
+            self.rect.bottom = screen_hieght
+            self.vy = -1
+
+ 
