@@ -12,6 +12,15 @@ class Wall(pygame.sprite.Sprite):
         self.rect.topleft = (x, y)
 
 
+class Stairs(pygame.sprite.Sprite):
+    def __init__(self, x, y, size):
+        super().__init__()
+        self.image = pygame.Surface((size, size))
+        self.image.fill((255, 255, 80))
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (x, y)
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, speed, sword_damage, sword_cooldown_max, screen_width, screen_height):
         super().__init__()
@@ -41,6 +50,10 @@ class Player(pygame.sprite.Sprite):
         
         self.screen_width = screen_width
         self.screen_height = screen_height
+        
+        self.xp = 0
+        self.level = 1
+        self.xp_to_next_level = 100
 
     def update(self, enemy_group=None, wall_group=None):
         keys = pygame.key.get_pressed()
@@ -84,10 +97,6 @@ class Player(pygame.sprite.Sprite):
                 if self.vy < 0:
                     self.rect.top = hits[0].rect.bottom
         
-
-        
-        
-        
         if self.sword_cooldown > 0:
             self.sword_cooldown -= 1
 
@@ -96,7 +105,6 @@ class Player(pygame.sprite.Sprite):
             if keys[pygame.K_SPACE] and self.sword_cooldown <= 0:
                 
                 self.sword_cooldown = self.sword_cooldown_max
-                
                 
                 hw = 40 
                 hh = 40 
@@ -108,12 +116,19 @@ class Player(pygame.sprite.Sprite):
                     hit_box = pygame.Rect(self.rect.centerx - hw // 2, self.rect.top - hh, hw, hh)
                 else:  
                     hit_box = pygame.Rect(self.rect.centerx - hw // 2, self.rect.bottom, hw, hh)
-
                 
                 for enemy in enemy_group:
                     if hit_box.colliderect(enemy.rect):
                         
                         enemy.health -= self.sword_damage
+        
+        
+        if self.xp >= self.xp_to_next_level:
+            self.level += 1
+            self.xp = self.xp - self.xp_to_next_level
+            self.xp_to_next_level = int(self.xp_to_next_level * 1.5)
+            self.max_health += 20
+            self.health = self.max_health
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -131,7 +146,6 @@ class Enemy(pygame.sprite.Sprite):
         self.speed = speed 
         self.chase_radius = chase_radius 
         self.wander_timer = 0
-
         
         self.health = health 
         self.max_health = health 

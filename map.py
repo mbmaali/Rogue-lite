@@ -31,10 +31,12 @@ class Dungeon:
         self.rooms = []
         self.wall_group = pygame.sprite.Group()
         self.player_start_pos = (0, 0)
+        self.stairs_pos = (0, 0)
 
     def generate(self):
         
         self.map_data = [[1 for _ in range(self.map_width)] for _ in range(self.map_height)]
+        self.rooms = []
         
         for r in range(self.max_rooms):
             w = random.randint(self.min_room_size, self.max_room_size)
@@ -55,6 +57,9 @@ class Dungeon:
                 self.connect_rooms(new_room, prev_room)
 
             self.rooms.append(new_room)
+            
+        
+        self.stairs_pos = self.rooms[-1].center()
 
     def carve_room(self, room):
         for x in range(room.x1, room.x2):
@@ -84,6 +89,7 @@ class Dungeon:
                 self.map_data[y][x] = 0
 
     def create_wall_sprites(self, TILESIZE, Wall):
+        self.wall_group.empty()
         for y, row in enumerate(self.map_data):
             for x, tile in enumerate(row):
                 if tile == 1:

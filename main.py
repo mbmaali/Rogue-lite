@@ -1,14 +1,14 @@
 import pygame
 import random
 import math
-from sprites import Player, Enemy, Projectile, Wall
+from sprites import Player, Enemy, Projectile, Wall, Stairs
 from map import Dungeon
 
 pygame.init()
 
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Rogue Ltie")
+pygame.display.set_caption("Rogue Ltie 2")
 
 
 PLAYER_SPEED = 5
@@ -21,7 +21,7 @@ ENEMY_SPEED = 2
 ENEMY_HEALTH = 20
 CHASE_RADIUS = 250
 PROJECTILE_DAMAGE = 5
-ENEMY_SPAWN_COUNT = 4 
+ENEMY_XP = 15
 
 
 TILESIZE = 32
@@ -33,19 +33,22 @@ ROOM_MAX_SIZE = 10
 
 
 
-def spawn_enemies(dungeon, enemy_group, all_sprites_group, screen_width, screen_height):
+def spawn_enemies(dungeon, enemy_group, all_sprites_group, game_level):
     
     
     for room in dungeon.rooms[1:]: 
         
-        num_to_spawn = random.randint(1, 3)
+        num_to_spawn = random.randint(1, 2) + game_level
         for _ in range(num_to_spawn):
             
             enemy_x = random.randint(room.x1, room.x2 - 1) * TILESIZE
             enemy_y = random.randint(room.y1, room.y2 - 1) * TILESIZE
 
             
-            enemy = Enemy(enemy_x, enemy_y, ENEMY_SPEED, CHASE_RADIUS, ENEMY_HEALTH, screen_width, screen_height)
+            new_health = ENEMY_HEALTH + (game_level * 3)
+            new_speed = ENEMY_SPEED + (game_level * 0.2)
+            
+            enemy = Enemy(enemy_x, enemy_y, new_speed, CHASE_RADIUS, new_health, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
             enemy_group.add(enemy)
             all_sprites_group.add(enemy)
 
@@ -55,6 +58,7 @@ small_font = pygame.font.Font(None, 36)
 
 
 game_state = "PLAYING"
+game_level = 1
 
 
 class Camera:
@@ -78,28 +82,49 @@ class Camera:
         self.camera = pygame.Rect(x, y, self.width, self.height)
 
 
-all_sprites = pygame.sprite.Group()
-enemy_group = pygame.sprite.Group()
-projectile_group = pygame.sprite.Group()
-wall_group = pygame.sprite.Group()
+
+def setup_new_level(game_level, player_obj):
+    
+    all_sprites = pygame.sprite.Group()
+    enemy_group = pygame.sprite.Group()
+    projectile_group = pygame.sprite.Group()
+    wall_group = pygame.sprite.Group()
+    stairs_group = pygame.sprite.Group()
+
+    
+    dungeon = Dungeon(MAP_WIDTH, MAP_HEIGHT, MAX_ROMS, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
+    dungeon.generate()
+    dungeon.create_wall_sprites(TILESIZE, Wall)
+    wall_group = dungeon.wall_group
+    all_sprites.add(wall_group)
+
+    player_start_pos = (dungeon.player_start_pos[0] * TILESIZE, dungeon.player_start_pos[1] * TILESIZE)
+    
+    
+    if player_obj is None:
+        player = Player(player_start_pos[0], player_start_pos[1], PLAYER_SPEED, SWORD_DAMAGE, SWORD_COOLDOWN, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
+    else:
+        player = player_obj
+        player.rect.center = player_start_pos
+        player.health = player.max_health
+    
+    all_sprites.add(player)
+    
+
+    stairs_pos = (dungeon.stairs_pos[0] * TILESIZE, dungeon.stairs_pos[1] * TILESIZE)
+    stairs = Stairs(stairs_pos[0], stairs_pos[1], TILESIZE)
+    all_sprites.add(stairs)
+    stairs_group.add(stairs)
 
 
-dungeon = Dungeon(MAP_WIDTH, MAP_HEIGHT, MAX_ROMS, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
-dungeon.generate()
-dungeon.create_wall_sprites(TILESIZE, Wall)
-wall_group = dungeon.wall_group
-all_sprites.add(wall_group)
+    spawn_enemies(dungeon, enemy_group, all_sprites, game_level)
 
-player_start_pos = (dungeon.player_start_pos[0] * TILESIZE, dungeon.player_start_pos[1] * TILESIZE)
+    camera = Camera(MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
+    
+    return player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, dungeon, camera
 
 
-player = Player(player_start_pos[0], player_start_pos[1], PLAYER_SPEED, SWORD_DAMAGE, SWORD_COOLDOWN, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
-all_sprites.add(player)
 
-
-spawn_enemies(dungeon, enemy_group, all_sprites, WIDTH, HEIGHT)
-
-camera = Camera(MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
 
 clock = pygame.time.Clock()
 
@@ -110,17 +135,32 @@ def draw_ui(surface, player_obj):
     bar_y = 10
     bar_w = 200
     bar_h = 20
-
+    
     pygame.draw.rect(surface, (150, 0, 0), (bar_x, bar_y, bar_w, bar_h))  
 
     
     health_pct = max(0, min(1.0, player_obj.health / player_obj.max_health))
     fg_w = int(bar_w * health_pct)
     pygame.draw.rect(surface, (0, 200, 0), (bar_x, bar_y, fg_w, bar_h))  
+    
+    health_text = small_font.render(f"{int(player_obj.health)} / {player_obj.max_health}", True, (255, 255, 255))
+    surface.blit(health_text, (bar_x + bar_w + 8, bar_y - 2))
+
 
     
-    health_text = small_font.render(f"{player_obj.health} / {player_obj.max_health}", True, (255, 255, 255))
-    surface.blit(health_text, (bar_x + bar_w + 8, bar_y - 2))
+    xp_bar_y = bar_y + bar_h + 5
+    pygame.draw.rect(surface, (50, 50, 50), (bar_x, xp_bar_y, bar_w, 15))
+    
+    if player_obj.xp_to_next_level > 0:
+        xp_pct = max(0, min(1.0, player_obj.xp / player_obj.xp_to_next_level))
+        xp_w = int(bar_w * xp_pct)
+        pygame.draw.rect(surface, (100, 0, 200), (bar_x, xp_bar_y, xp_w, 15))
+    
+    lvl_text = small_font.render(f"LVL: {player_obj.level}", True, (255, 255, 200))
+    surface.blit(lvl_text, (bar_x, xp_bar_y + 20))
+
+
+player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, dungeon, camera = setup_new_level(game_level, None)
 
 
 running = True
@@ -132,29 +172,9 @@ while running:
         if game_state == "GAME_OVER":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 
+                game_level = 1
+                player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, dungeon, camera = setup_new_level(game_level, None)
                 game_state = "PLAYING"
-                
-                
-                all_sprites = pygame.sprite.Group()
-                enemy_group = pygame.sprite.Group()
-                projectile_group = pygame.sprite.Group()
-                wall_group = pygame.sprite.Group()
-
-                
-                dungeon = Dungeon(MAP_WIDTH, MAP_HEIGHT, MAX_ROMS, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
-                dungeon.generate()
-                dungeon.create_wall_sprites(TILESIZE, Wall)
-                wall_group = dungeon.wall_group
-                all_sprites.add(wall_group)
-                
-                player_start_pos = (dungeon.player_start_pos[0] * TILESIZE, dungeon.player_start_pos[1] * TILESIZE)
-                player = Player(player_start_pos[0], player_start_pos[1], PLAYER_SPEED, SWORD_DAMAGE, SWORD_COOLDOWN, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
-                all_sprites.add(player)
-                
-                
-                spawn_enemies(dungeon, enemy_group, all_sprites, WIDTH, HEIGHT)
-                
-                camera = Camera(MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
 
         if game_state == "PLAYING":
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -162,6 +182,7 @@ while running:
                 
                 
                 player_screen_x, player_screen_y = camera.apply(player.rect).center
+                
                 dx = mx - player_screen_x
                 dy = my - player_screen_y
 
@@ -205,14 +226,17 @@ while running:
             
             enemy_hit.health -= len(projectiles_that_hit) * PROJECTILE_DAMAGE
             if enemy_hit.health <= 0:
+                player.xp += ENEMY_XP
                 enemy_hit.kill()
         
         
-        if not enemy_group: 
-            spawn_enemies(dungeon, enemy_group, all_sprites, WIDTH, HEIGHT)
+        hits = pygame.sprite.spritecollide(player, stairs_group, False)
+        if hits:
+            game_level += 1
+            player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, dungeon, camera = setup_new_level(game_level, player)
+
 
         
-
         screen.fill((20, 20, 20))
         
         for sprite in all_sprites:
@@ -220,11 +244,8 @@ while running:
 
         
         for enemy in enemy_group:
-        
-
             bar_w = enemy.rect.width
             bar_h = 6
-            
             
             bar_rect = pygame.Rect(0, 0, bar_w, bar_h)
             bar_rect.centerx = enemy.rect.centerx
