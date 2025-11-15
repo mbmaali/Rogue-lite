@@ -21,6 +21,21 @@ class Stairs(pygame.sprite.Sprite):
         self.rect.topleft = (x, y)
 
 
+class PowerUp(pygame.sprite.Sprite):
+    def __init__(self, x, y, p_type):
+        super().__init__()
+        self.type = p_type
+        self.image = pygame.Surface((20, 20))
+        
+        if self.type == 'health':
+            self.image.fill((0, 255, 0))
+        elif self.type == 'speed':
+            self.image.fill((255, 255, 0))
+            
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, speed, sword_damage, sword_cooldown_max, screen_width, screen_height):
         super().__init__()
@@ -33,7 +48,10 @@ class Player(pygame.sprite.Sprite):
 
         self.vx = 0
         self.vy = 0
-        self.speed = speed 
+        
+        self.base_speed = speed
+        self.speed = self.base_speed
+        self.speed_boost_timer = 0
 
         
         self.health = 100
@@ -56,6 +74,14 @@ class Player(pygame.sprite.Sprite):
         self.xp_to_next_level = 100
 
     def update(self, enemy_group=None, wall_group=None):
+    
+        if self.speed_boost_timer > 0:
+            self.speed = self.base_speed * 1.5
+            self.speed_boost_timer -= 1
+        else:
+            self.speed = self.base_speed
+    
+    
         keys = pygame.key.get_pressed()
 
         self.vx = 0

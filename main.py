@@ -1,7 +1,7 @@
 import pygame
 import random
 import math
-from sprites import Player, Enemy, Projectile, Wall, Stairs
+from sprites import Player, Enemy, Projectile, Wall, Stairs, PowerUp
 from map import Dungeon
 
 pygame.init()
@@ -90,6 +90,7 @@ def setup_new_level(game_level, player_obj):
     projectile_group = pygame.sprite.Group()
     wall_group = pygame.sprite.Group()
     stairs_group = pygame.sprite.Group()
+    powerup_group = pygame.sprite.Group()
 
     
     dungeon = Dungeon(MAP_WIDTH, MAP_HEIGHT, MAX_ROMS, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
@@ -121,7 +122,7 @@ def setup_new_level(game_level, player_obj):
 
     camera = Camera(MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
     
-    return player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, dungeon, camera
+    return player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, dungeon, camera
 
 
 
@@ -154,13 +155,13 @@ def draw_ui(surface, player_obj):
     if player_obj.xp_to_next_level > 0:
         xp_pct = max(0, min(1.0, player_obj.xp / player_obj.xp_to_next_level))
         xp_w = int(bar_w * xp_pct)
-        pygame.draw.rect(surface, (100, 0, 200), (bar_x, xp_bar_y, xp_w, 15))
+        pygame.draw.rect(surface, (255, 255, 0), (bar_x, xp_bar_y, xp_w, 15))
     
     lvl_text = small_font.render(f"LVL: {player_obj.level}", True, (255, 255, 200))
     surface.blit(lvl_text, (bar_x, xp_bar_y + 20))
 
 
-player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, dungeon, camera = setup_new_level(game_level, None)
+player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, dungeon, camera = setup_new_level(game_level, None)
 
 
 running = True
@@ -173,7 +174,7 @@ while running:
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 
                 game_level = 1
-                player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, dungeon, camera = setup_new_level(game_level, None)
+                player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, dungeon, camera = setup_new_level(game_level, None)
                 game_state = "PLAYING"
 
         if game_state == "PLAYING":
@@ -227,13 +228,29 @@ while running:
             enemy_hit.health -= len(projectiles_that_hit) * PROJECTILE_DAMAGE
             if enemy_hit.health <= 0:
                 player.xp += ENEMY_XP
+                
+                if random.random() < 0.1:
+                    p_type = random.choice(['health', 'speed'])
+                    new_powerup = PowerUp(enemy_hit.rect.centerx, enemy_hit.rect.centery, p_type)
+                    all_sprites.add(new_powerup)
+                    powerup_group.add(new_powerup)
+                
                 enemy_hit.kill()
+        
+        
+        powerup_hits = pygame.sprite.spritecollide(player, powerup_group, True)
+        for hit in powerup_hits:
+            if hit.type == 'health':
+                player.health = min(player.max_health, player.health + 25)
+            elif hit.type == 'speed':
+                player.speed_boost_timer = 300
+        
         
         
         hits = pygame.sprite.spritecollide(player, stairs_group, False)
         if hits:
             game_level += 1
-            player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, dungeon, camera = setup_new_level(game_level, player)
+            player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, dungeon, camera = setup_new_level(game_level, player)
 
 
         
