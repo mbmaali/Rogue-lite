@@ -36,6 +36,25 @@ class PowerUp(pygame.sprite.Sprite):
         self.rect.center = (x, y)
 
 
+class Particle(pygame.sprite.Sprite):
+    def __init__(self, x, y, color):
+        super().__init__()
+        self.image = pygame.Surface((random.randint(2, 5), random.randint(2, 5)))
+        self.image.fill(color)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+        self.vx = random.uniform(-2, 2)
+        self.vy = random.uniform(-2, 2)
+        self.lifetime = random.randint(15, 30)
+
+    def update(self):
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+        self.lifetime -= 1
+        if self.lifetime <= 0:
+            self.kill()
+
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y, speed, sword_damage, sword_cooldown_max, screen_width, screen_height):
         super().__init__()
@@ -52,6 +71,7 @@ class Player(pygame.sprite.Sprite):
         self.base_speed = speed
         self.speed = self.base_speed
         self.speed_boost_timer = 0
+        self.invincible_timer = 0
 
         
         self.health = 100
@@ -74,6 +94,12 @@ class Player(pygame.sprite.Sprite):
         self.xp_to_next_level = 100
 
     def update(self, enemy_group=None, wall_group=None):
+        
+        self.image.set_alpha(255)
+        if self.invincible_timer > 0:
+            self.invincible_timer -= 1
+            if (self.invincible_timer // 3) % 2 == 0:
+                self.image.set_alpha(100)
     
         if self.speed_boost_timer > 0:
             self.speed = self.base_speed * 1.5
