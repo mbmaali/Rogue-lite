@@ -57,7 +57,7 @@ font = pygame.font.Font(None, 74)
 small_font = pygame.font.Font(None, 36)
 
 
-game_state = "PLAYING"
+game_state = "MENU"
 game_level = 1
 
 
@@ -161,7 +161,16 @@ def draw_ui(surface, player_obj):
     surface.blit(lvl_text, (bar_x, xp_bar_y + 20))
 
 
-player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, dungeon, camera = setup_new_level(game_level, None)
+
+player = None
+all_sprites = pygame.sprite.Group()
+enemy_group = pygame.sprite.Group()
+projectile_group = pygame.sprite.Group()
+wall_group = pygame.sprite.Group()
+stairs_group = pygame.sprite.Group()
+powerup_group = pygame.sprite.Group()
+dungeon = None
+camera = None
 
 
 running = True
@@ -170,14 +179,20 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        if game_state == "GAME_OVER":
+        if game_state == "MENU":
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
+                game_level = 1
+                player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, dungeon, camera = setup_new_level(game_level, None)
+                game_state = "PLAYING"
+
+        elif game_state == "GAME_OVER":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 
                 game_level = 1
                 player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, dungeon, camera = setup_new_level(game_level, None)
                 game_state = "PLAYING"
 
-        if game_state == "PLAYING":
+        elif game_state == "PLAYING":
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mx, my = pygame.mouse.get_pos()
                 
@@ -285,6 +300,14 @@ while running:
         restart_surface = small_font.render("Press R to Reestart", True, (255, 255, 255))
         screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, HEIGHT // 2 - 60))
         screen.blit(restart_surface, (WIDTH // 2 - restart_surface.get_width() // 2, HEIGHT // 2 + 20))
+
+    elif game_state == "MENU":
+        screen.fill((10, 10, 30))
+        title_text = font.render("Rogue Ltie 2", True, (255, 255, 255))
+        start_text = small_font.render("Press SPACE to Start", True, (255, 255, 255))
+        screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 2 - 60))
+        screen.blit(start_text, (WIDTH // 2 - start_text.get_width() // 2, HEIGHT // 2 + 20))
+
 
     pygame.display.flip()
     clock.tick(60)
