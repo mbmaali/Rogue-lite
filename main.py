@@ -10,7 +10,7 @@ pygame.mixer.init()
 
 WIDTH, HEIGHT = 800, 600
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Rogue Lite")
+pygame.display.set_caption("Rogue Lite 2")
 
 
 PLAYER_SPEED = 5
@@ -82,6 +82,25 @@ game_state = "MENU"
 game_level = 1
 previous_player_level = 1
 shake_timer = 0
+score = 0
+highscore = 0
+highscore_file = "highscore.txt"
+
+def load_highscore():
+    try:
+        with open(highscore_file, 'r') as f:
+            return int(f.read())
+    except:
+        return 0
+
+def save_highscore(new_score):
+    try:
+        with open(highscore_file, 'w') as f:
+            f.write(str(new_score))
+    except:
+        print("coudnt save highscore")
+
+highscore = load_highscore()
 
 
 class Camera:
@@ -108,6 +127,8 @@ class Camera:
 
 def setup_new_level(game_level, player_obj):
     
+    global score
+    
     all_sprites = pygame.sprite.Group()
     enemy_group = pygame.sprite.Group()
     projectile_group = pygame.sprite.Group()
@@ -130,6 +151,7 @@ def setup_new_level(game_level, player_obj):
         player = Player(player_start_pos[0], player_start_pos[1], PLAYER_SPEED, SWORD_DAMAGE, SWORD_COOLDOWN, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
         global previous_player_level
         previous_player_level = 1
+        score = 0
     else:
         player = player_obj
         player.rect.center = player_start_pos
@@ -186,6 +208,9 @@ def draw_ui(surface, player_obj):
     lvl_text = small_font.render(f"LVL: {player_obj.level}", True, (255, 255, 200))
     surface.blit(lvl_text, (bar_x, xp_bar_y + 20))
 
+    
+    score_text = small_font.render(f"Score: {score}", True, (255, 255, 255))
+    surface.blit(score_text, (WIDTH - score_text.get_width() - 10, 10))
 
 
 player = None
@@ -277,6 +302,9 @@ while running:
                 if player.health <= 0:
                     player.health = 0 
                     game_state = "GAME_OVER"
+                    if score > highscore:
+                        highscore = score
+                        save_highscore(highscore)
 
         
         hits = pygame.sprite.groupcollide(enemy_group, projectile_group, False, True)
@@ -287,6 +315,7 @@ while running:
                 enemy_hit_sound.play()
             if enemy_hit.health <= 0:
                 player.xp += ENEMY_XP
+                score += 100
                 
                 for _ in range(random.randint(10, 15)):
                     p = Particle(enemy_hit.rect.centerx, enemy_hit.rect.centery, (255, 0, 0))
@@ -325,6 +354,7 @@ while running:
         hits = pygame.sprite.spritecollide(player, stairs_group, False)
         if hits:
             game_level += 1
+            score += 1000
             player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera = setup_new_level(game_level, player)
 
 
@@ -364,9 +394,16 @@ while running:
     elif game_state == "GAME_OVER":
         screen.fill((150, 0, 0))
         text_surface = font.render("GAME OVER", True, (255, 255, 255))
-        restart_surface = small_font.render("Press R to Reestart", True, (255, 255, 255))
-        screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, HEIGHT // 2 - 60))
-        screen.blit(restart_surface, (WIDTH // 2 - restart_surface.get_width() // 2, HEIGHT // 2 + 20))
+        
+        score_surface = small_font.render(f"Your Score: {score}", True, (255, 255, 255))
+        hs_surface = small_font.render(f"High Score: {highscore}", True, (255, 255, 255))
+        
+        restart_surface = small_font.render("Press R to Restart", True, (255, 255, 255))
+        
+        screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, HEIGHT // 2 - 100))
+        screen.blit(score_surface, (WIDTH // 2 - score_surface.get_width() // 2, HEIGHT // 2 - 20))
+        screen.blit(hs_surface, (WIDTH // 2 - hs_surface.get_width() // 2, HEIGHT // 2 + 20))
+        screen.blit(restart_surface, (WIDTH // 2 - restart_surface.get_width() // 2, HEIGHT // 2 + 80))
 
     elif game_state == "MENU":
         screen.fill((10, 10, 30))
