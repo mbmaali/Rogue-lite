@@ -1,7 +1,7 @@
 import pygame
 import random
 import math
-from sprites import Player, Enemy, Projectile, Wall, Stairs, PowerUp, Particle
+from sprites import Player, Enemy, Projectile, Wall, Stairs, PowerUp, Particle, Tank, Shooter, Charger
 from map import Dungeon
 
 pygame.init()
@@ -17,6 +17,7 @@ PLAYER_SPEED = 5
 SWORD_DAMAGE = 8
 SWORD_COOLDOWN = 20  
 BULLET_SPEED = 8
+ENEMY_BULLET_DAMAGE = 10
 
 
 ENEMY_SPEED = 2
@@ -50,7 +51,18 @@ def spawn_enemies(dungeon, enemy_group, all_sprites_group, game_level):
             new_health = ENEMY_HEALTH + (game_level * 3)
             new_speed = ENEMY_SPEED + (game_level * 0.2)
             
-            enemy = Enemy(enemy_x, enemy_y, new_speed, CHASE_RADIUS, new_health, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
+            enemy_type = random.choice(['normal', 'normal', 'normal', 'tank', 'shooter', 'charger'])
+            
+            if enemy_type == 'tank':
+                enemy = Tank(enemy_x, enemy_y, new_speed, CHASE_RADIUS, new_health, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
+            elif enemy_type == 'shooter':
+                enemy = Shooter(enemy_x, enemy_y, new_speed, CHASE_RADIUS, new_health, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
+            elif enemy_type == 'charger':
+                enemy = Charger(enemy_x, enemy_y, new_speed, CHASE_RADIUS, new_health, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
+            else:
+                enemy = Enemy(enemy_x, enemy_y, new_speed, CHASE_RADIUS, new_health, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
+
+            
             enemy_group.add(enemy)
             all_sprites_group.add(enemy)
 
@@ -66,7 +78,7 @@ try:
     level_up_sound = pygame.mixer.Sound('level_up.wav')
     pickup_powerup_sound = pygame.mixer.Sound('pickup_powerup.wav')
     
-    pygame.mixer.music.load('music.wav')
+    pygame.mixer.music.load('music.mp3')
     pygame.mixer.music.set_volume(0.3)
     pygame.mixer.music.play(loops=-1)
 except FileNotFoundError:
@@ -131,7 +143,8 @@ def setup_new_level(game_level, player_obj):
     
     all_sprites = pygame.sprite.Group()
     enemy_group = pygame.sprite.Group()
-    projectile_group = pygame.sprite.Group()
+    player_projectile_group = pygame.sprite.Group()
+    enemy_projectile_group = pygame.sprite.Group()
     wall_group = pygame.sprite.Group()
     stairs_group = pygame.sprite.Group()
     powerup_group = pygame.sprite.Group()
@@ -156,6 +169,7 @@ def setup_new_level(game_level, player_obj):
         player = player_obj
         player.rect.center = player_start_pos
         player.health = player.max_health
+        player.invincible_timer = 60
     
     all_sprites.add(player)
     
@@ -170,7 +184,7 @@ def setup_new_level(game_level, player_obj):
 
     camera = Camera(MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
     
-    return player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera
+    return player, all_sprites, enemy_group, player_projectile_group, enemy_projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera
 
 
 
@@ -216,7 +230,8 @@ def draw_ui(surface, player_obj):
 player = None
 all_sprites = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
-projectile_group = pygame.sprite.Group()
+player_projectile_group = pygame.sprite.Group()
+enemy_projectile_group = pygame.sprite.Group()
 wall_group = pygame.sprite.Group()
 stairs_group = pygame.sprite.Group()
 powerup_group = pygame.sprite.Group()
@@ -234,14 +249,14 @@ while running:
         if game_state == "MENU":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE:
                 game_level = 1
-                player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera = setup_new_level(game_level, None)
+                player, all_sprites, enemy_group, player_projectile_group, enemy_projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera = setup_new_level(game_level, None)
                 game_state = "PLAYING"
 
         elif game_state == "GAME_OVER":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
                 
                 game_level = 1
-                player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera = setup_new_level(game_level, None)
+                player, all_sprites, enemy_group, player_projectile_group, enemy_projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera = setup_new_level(game_level, None)
                 game_state = "PLAYING"
 
         elif game_state == "PLAYING":
@@ -262,9 +277,9 @@ while running:
                 vy = dy * BULLET_SPEED
                 
                 
-                bullet = Projectile(player.rect.centerx, player.rect.centery, vx, vy, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE)
+                bullet = Projectile(player.rect.centerx, player.rect.centery, vx, vy, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE, shot_by_player=True)
                 all_sprites.add(bullet)
-                projectile_group.add(bullet)
+                player_projectile_group.add(bullet)
                 if shoot_sound:
                     shoot_sound.play()
 
@@ -280,7 +295,14 @@ while running:
         
         for e in enemy_group:
             e.update(player, wall_group)
-        projectile_group.update()
+            if hasattr(e, 'action') and e.action == "shoot":
+                bullet = Projectile(e.rect.centerx, e.rect.centery, e.shoot_vx, e.shoot_vy, MAP_WIDTH * TILESIZE, MAP_HEIGHT * TILESIZE, shot_by_player=False)
+                all_sprites.add(bullet)
+                enemy_projectile_group.add(bullet)
+                e.action = None
+                
+        player_projectile_group.update()
+        enemy_projectile_group.update()
         particle_group.update()
         
         camera.update(player)
@@ -305,9 +327,25 @@ while running:
                     if score > highscore:
                         highscore = score
                         save_highscore(highscore)
+            
+            
+            enemy_bullet_hits = pygame.sprite.spritecollide(player, enemy_projectile_group, True)
+            for hit in enemy_bullet_hits:
+                player.health -= ENEMY_BULLET_DAMAGE
+                player.invincible_timer = 30
+                shake_timer = 15
+                if player_hit_sound:
+                    player_hit_sound.play()
+                if player.health <= 0:
+                    player.health = 0
+                    game_state = "GAME_OVER"
+                    if score > highscore:
+                        highscore = score
+                        save_highscore(highscore)
+                
 
         
-        hits = pygame.sprite.groupcollide(enemy_group, projectile_group, False, True)
+        hits = pygame.sprite.groupcollide(enemy_group, player_projectile_group, False, True)
         for enemy_hit, projectiles_that_hit in hits.items():
             
             enemy_hit.health -= len(projectiles_that_hit) * PROJECTILE_DAMAGE
@@ -332,12 +370,14 @@ while running:
                 enemy_hit.kill()
         
         
-        proj_wall_hits = pygame.sprite.groupcollide(projectile_group, wall_group, True, False)
+        proj_wall_hits = pygame.sprite.groupcollide(player_projectile_group, wall_group, True, False)
         for proj, walls in proj_wall_hits.items():
             for _ in range(random.randint(2, 4)):
                 p = Particle(proj.rect.centerx, proj.rect.centery, (255, 255, 0))
                 all_sprites.add(p)
                 particle_group.add(p)
+        
+        pygame.sprite.groupcollide(enemy_projectile_group, wall_group, True, False)
 
         
         powerup_hits = pygame.sprite.spritecollide(player, powerup_group, True)
@@ -355,7 +395,7 @@ while running:
         if hits:
             game_level += 1
             score += 1000
-            player, all_sprites, enemy_group, projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera = setup_new_level(game_level, player)
+            player, all_sprites, enemy_group, player_projectile_group, enemy_projectile_group, wall_group, stairs_group, powerup_group, particle_group, dungeon, camera = setup_new_level(game_level, player)
 
 
         
@@ -398,7 +438,7 @@ while running:
         score_surface = small_font.render(f"Your Score: {score}", True, (255, 255, 255))
         hs_surface = small_font.render(f"High Score: {highscore}", True, (255, 255, 255))
         
-        restart_surface = small_font.render("Press R to Restart", True, (255, 255, 255))
+        restart_surface = small_font.render("Press R to Reestart", True, (255, 255, 255))
         
         screen.blit(text_surface, (WIDTH // 2 - text_surface.get_width() // 2, HEIGHT // 2 - 100))
         screen.blit(score_surface, (WIDTH // 2 - score_surface.get_width() // 2, HEIGHT // 2 - 20))
@@ -407,7 +447,7 @@ while running:
 
     elif game_state == "MENU":
         screen.fill((10, 10, 30))
-        title_text = font.render("Rogue Ltie 2", True, (255, 255, 255))
+        title_text = font.render("Rogue lite 2", True, (255, 255, 255))
         start_text = small_font.render("Press SPACE to Start", True, (255, 255, 255))
         screen.blit(title_text, (WIDTH // 2 - title_text.get_width() // 2, HEIGHT // 2 - 60))
         screen.blit(start_text, (WIDTH // 2 - start_text.get_width() // 2, HEIGHT // 2 + 20))
