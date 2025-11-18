@@ -71,16 +71,17 @@ python main.py
 The game expects specific audio filenames.\
 Without them the game will run but **without sound**.
 
-### **Required Audio Files**
+### Required Audio Files
 
-  Type     Filename                 Used For
-  -------- ------------------------ --------------------------
-  `.wav`   **music.wav**            Background music (loops)
-  `.wav`   **shoot.wav**            Player ranged attack
-  `.wav`   **player_hit.wav**       Player taking damage
-  `.wav`   **enemy_hit.wav**        Hitting an enemy
-  `.wav`   **level_up.wav**         Player leveling up
-  `.wav`   **pickup_powerup.wav**   Picking up a power-up
+| Type   | Filename            | Used For                      |
+|--------|----------------------|-------------------------------|
+| .wav   | `music.wav`          | Background music (loops)      |
+| .wav   | `shoot.wav`          | Player ranged attack          |
+| .wav   | `player_hit.wav`     | Player taking damage          |
+| .wav   | `enemy_hit.wav`      | Enemy taking damage           |
+| .wav   | `level_up.wav`       | Player leveling up            |
+| .wav   | `pickup_powerup.wav` | Picking up a power-up         |
+
 
 These files must be in the **same folder as `main.py`**.
 
@@ -88,15 +89,16 @@ These files must be in the **same folder as `main.py`**.
 
 ## **4. Controls & Objectives**
 
-### **Controls**
+### Controls
 
-  Input                      Action
-  -------------------------- -------------------------------
-  **W A S D**                Movement
-  **Left Mouse Click**       Shoot projectile (Magic Bolt)
-  **Spacebar**               Melee attack (Sword)
-  **Space** (Main Menu)      Start game
-  **R** (Game Over screen)   Restart
+| Input              | Action                       |
+|--------------------|------------------------------|
+| **W A S D**        | Movement                     |
+| **Left Mouse Click** | Shoot projectile (Magic Bolt) |
+| **Spacebar**       | Melee attack (Sword)         |
+| **Space** (Menu)   | Start the game               |
+| **R** (Game Over)  | Restart the game             |
+
 
 ### **Objective**
 
