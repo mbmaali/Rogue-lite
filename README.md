@@ -1,43 +1,45 @@
-# **ROGUE-LITE 2D DUNGEON CRAWLER (V1.0)**
+# **ROGUE-LITE**
 
-Project Page: *(replace with your link)*
+Project Page: *https://mbmaali.itch.io/rogue-lite-2*
 
 A generated rogue lite game built using **Python** and **pygame**. Your goal: survive, descend as many levels as possible, and achieve the highest score.
 
 ------------------------------------------------------------------------
 
-## **1. Game Overview & Features**
+## 1. Game Overview
 
-### **Core Features**
+This game features fully procedural levels, multiple enemy types, and a
+simple progression system that keeps each run feeling different.
 
--   **Dynamic Procedural Map Generation**\
-    Every level is fully randomized with unique rooms and tunnels.
+### Main Features
 
--   **Four Enemy Types (with AI behaviors):**
+-   **Randomly generated maps**\
+    Every floor is new---rooms, tunnels, enemy placement, all different
+    each time.
 
-    -   **Standard (Red):** Basic chasing behavior.\
-    -   **Tank (Grey):** Slow, high health, damage sponge.\
-    -   **Shooter (Green):** Maintains distance, fires magical
-        projectiles.\
-    -   **Charger (Orange):** Stops, locks onto the player, and dashes
-        at high speed.
+-   **Four enemy types**, each with unique behavior:
 
--   **Player Progression**
+    -   **Red -- Chaser:** Runs straight at you.
+    -   **Grey -- Tank:** Slow, bulky, takes a lot of hits.
+    -   **Green -- Shooter:** Keeps distance and fires projectiles.
+    -   **Orange -- Charger:** Pauses, locks on, then dashes fast.
 
-    -   XP & level-up system\
-    -   Increased max health on level-up\
-    -   Score saving (persistent high score)
+-   **Player progression**
 
--   **Game Juice / Visual Feedback**
+    -   Gain XP from kills\
+    -   Level up to increase max health\
+    -   Persistent high score saved locally
 
-    -   Screen shake when taking damage\
-    -   Floating damage numbers (e.g., `-5`)\
-    -   Particle explosions on kills and projectile impacts\
-    -   Invincibility frames (flashing)
+-   **Visual feedback / Game juice**
 
--   **Persistence**
+    -   Screen shake when you take damage\
+    -   Floating damage numbers\
+    -   Particle effects on hits and kills\
+    -   Temporary invincibility flashes after being hit
 
-    -   High score saved to `highscore.txt`
+-   **Data saved locally**
+
+    -   High score stored in `highscore.txt`
 
 ------------------------------------------------------------------------
 
